@@ -23,7 +23,14 @@ const updateProfile = async (req, res) => {
     const user = await prisma.user.update({
       where: { id: req.user.userId },
       data: updateData,
-      select: { id: true, username: true, email: true, avatarUrl: true, status: true }
+      select: {
+        id: true,
+        username: true,
+        discriminator: true,
+        displayId: true,
+        avatarUrl: true,
+        status: true
+      }
     });
 
     res.json({ user });
@@ -39,8 +46,18 @@ const searchUsers = async (req, res) => {
     if (!q || q.length < 2) return res.status(400).json({ error: 'Search query too short' });
 
     const users = await prisma.user.findMany({
-      where: { username: { contains: q, mode: 'insensitive' }, NOT: { id: req.user.userId } },
-      select: { id: true, username: true, avatarUrl: true, status: true },
+      where: {
+        username: { contains: q, mode: 'insensitive' },
+        NOT: { id: req.user.userId }
+      },
+      select: {
+        id: true,
+        username: true,
+        discriminator: true,
+        displayId: true,
+        avatarUrl: true,
+        status: true
+      },
       take: 10
     });
 
