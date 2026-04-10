@@ -34,7 +34,7 @@ const createServer = async (req, res) => {
         data: {
           name: name.trim(),
           ownerId: req.user.userId,
-          iconUrl: req.file ? `/uploads/${req.file.filename}` : null
+          iconUrl: req.file ? req.file.path : null
         }
       });
       await tx.serverMember.create({

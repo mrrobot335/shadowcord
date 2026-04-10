@@ -15,7 +15,7 @@ const updateProfile = async (req, res) => {
     }
 
     if (req.file) {
-      updateData.avatarUrl = `/uploads/${req.file.filename}`;
+      updateData.avatarUrl = req.file.path; // Cloudinary URL
     }
 
     const user = await prisma.user.update({
