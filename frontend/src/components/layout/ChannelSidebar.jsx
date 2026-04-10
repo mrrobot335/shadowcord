@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Hash, Volume2, Plus, Trash2, Mic, MicOff, PhoneOff, ChevronDown, Copy } from 'lucide-react';
+import { Hash, Volume2, Plus, Trash2, Mic, MicOff, PhoneOff, ChevronDown, Copy, Settings, LogOut, Upload, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import CreateChannelModal from '../modals/CreateChannelModal';
 
@@ -32,19 +32,7 @@ const ChannelSidebar = ({ server, channels, selectedChannel, onSelectChannel, vi
   return (
     <>
       <div className="flex flex-col" style={{ width: '240px', background: 'var(--color-bg-3)', borderRight: '1px solid var(--color-border)' }}>
-        <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--color-border)' }}>
-          <h2 className="font-semibold text-sm truncate" style={{ color: 'var(--color-text-1)' }}>{server.name}</h2>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(server.id);
-              alert('Server ID copied! Share it with friends so they can join.');
-            }}
-            title="Copy Server ID to invite friends"
-            style={{ color: 'var(--color-text-3)', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            <Copy size={16} />
-          </button>
-        </div>
+        <ServerHeader server={server} onChannelsUpdate={onChannelsUpdate} />
 
         <div className="flex-1 overflow-y-auto p-2">
           <div className="mb-4">
@@ -81,6 +69,179 @@ const ChannelSidebar = ({ server, channels, selectedChannel, onSelectChannel, vi
           onClose={() => setShowCreateChannel(false)} onChannelCreated={handleChannelCreated} />
       )}
     </>
+  );
+};
+
+const ServerHeader = ({ server, onChannelsUpdate }) => {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  return (
+    <>
+      <div className="px-4 py-3 flex items-center justify-between cursor-pointer relative"
+        style={{ borderBottom: '1px solid var(--color-border)' }}
+        onClick={() => setShowDropdown(!showDropdown)}>
+        <h2 className="font-semibold text-sm truncate" style={{ color: 'var(--color-text-1)' }}>{server.name}</h2>
+        <ChevronDown size={16} style={{ color: 'var(--color-text-3)', transform: showDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+
+        {showDropdown && (
+          <div className="absolute top-full left-0 right-0 z-50 rounded-lg overflow-hidden shadow-xl"
+            style={{ background: 'var(--color-bg-2)', border: '1px solid var(--color-border)', margin: '4px 8px' }}>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(server.id);
+                alert('Server ID copied! Share it with friends.');
+                setShowDropdown(false);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left"
+              style={{ color: 'var(--color-text-2)', background: 'none', border: 'none', cursor: 'pointer' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-bg-4)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'none'}>
+              <Copy size={14} />
+              Copy Invite ID
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowSettings(true);
+                setShowDropdown(false);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left"
+              style={{ color: 'var(--color-text-2)', background: 'none', border: 'none', cursor: 'pointer' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-bg-4)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'none'}>
+              <Settings size={14} />
+              Server Settings
+            </button>
+
+            <div style={{ height: '1px', background: 'var(--color-border)', margin: '4px 0' }} />
+
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (!confirm('Leave this server?')) return;
+                try {
+                  const { default: apiClient } = await import('../../api/client');
+                  await apiClient.delete(`/servers/${server.id}/leave`);
+                  window.location.reload();
+                } catch (err) {
+                  alert('Failed to leave server');
+                }
+                setShowDropdown(false);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left"
+              style={{ color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-bg-4)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'none'}>
+              <LogOut size={14} />
+              Leave Server
+            </button>
+          </div>
+        )}
+      </div>
+
+      {showSettings && (
+        <ServerSettingsModal server={server} onClose={() => setShowSettings(false)} />
+      )}
+    </>
+  );
+};
+
+const ServerSettingsModal = ({ server, onClose }) => {
+  const [name, setName] = useState(server.name);
+  const [icon, setIcon] = useState(null);
+  const [preview, setPreview] = useState(server.iconUrl || null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const handleIconChange = (e) => {
+    const file = e.target.files[0];
+    if (file) { setIcon(file); setPreview(URL.createObjectURL(file)); }
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      const { default: apiClient } = await import('../../api/client');
+      const formData = new FormData();
+      formData.append('name', name);
+      if (icon) formData.append('icon', icon);
+      await apiClient.put(`/servers/${server.id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setMessage('Server updated successfully');
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err) {
+      setMessage('Failed to update server');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(0,0,0,0.6)' }}>
+      <div className="w-full max-w-md p-6 rounded-xl" style={{ background: 'var(--color-bg-3)', border: '1px solid var(--color-border)' }}>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-bold" style={{ color: 'var(--color-text-1)' }}>Server Settings</h2>
+          <button onClick={onClose} style={{ color: 'var(--color-text-3)', background: 'none', border: 'none', cursor: 'pointer' }}>
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="flex flex-col items-center mb-6">
+          <label className="flex items-center justify-center rounded-full cursor-pointer overflow-hidden mb-2"
+            style={{ width: '80px', height: '80px', background: 'var(--color-bg-5)', border: '2px dashed var(--color-border)' }}>
+            {preview
+              ? <img src={preview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : <div className="flex flex-col items-center gap-1">
+                  <Upload size={20} style={{ color: 'var(--color-text-3)' }} />
+                  <span className="text-xs" style={{ color: 'var(--color-text-3)' }}>Icon</span>
+                </div>
+            }
+            <input type="file" accept="image/*" className="hidden" onChange={handleIconChange} />
+          </label>
+          <p className="text-xs" style={{ color: 'var(--color-text-3)' }}>Click to change server icon</p>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-xs font-semibold mb-1 uppercase" style={{ color: 'var(--color-text-2)' }}>Server Name</label>
+          <input value={name} onChange={(e) => setName(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
+            style={{ background: 'var(--color-bg-5)', border: '1px solid var(--color-border)', color: 'var(--color-text-1)' }} />
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-xs font-semibold mb-1 uppercase" style={{ color: 'var(--color-text-2)' }}>Invite ID</label>
+          <div className="flex gap-2">
+            <input value={server.id} readOnly
+              className="flex-1 px-3 py-2.5 rounded-lg text-sm outline-none opacity-60"
+              style={{ background: 'var(--color-bg-5)', border: '1px solid var(--color-border)', color: 'var(--color-text-1)' }} />
+            <button
+              onClick={() => { navigator.clipboard.writeText(server.id); setMessage('Copied!'); setTimeout(() => setMessage(''), 2000); }}
+              className="px-3 py-2 rounded-lg text-sm"
+              style={{ background: 'var(--color-bg-5)', color: 'var(--color-text-2)', border: '1px solid var(--color-border)', cursor: 'pointer' }}>
+              <Copy size={14} />
+            </button>
+          </div>
+        </div>
+
+        {message && <p className="text-xs mb-3" style={{ color: message.includes('success') || message === 'Copied!' ? '#22c55e' : 'var(--color-primary)' }}>{message}</p>}
+
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-sm"
+            style={{ background: 'var(--color-bg-5)', color: 'var(--color-text-2)', border: 'none', cursor: 'pointer' }}>
+            Cancel
+          </button>
+          <button onClick={handleSave} disabled={loading} className="flex-1 py-2.5 rounded-lg font-semibold text-sm disabled:opacity-50"
+            style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', cursor: 'pointer' }}>
+            {loading ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -157,7 +318,6 @@ const UserPanel = ({ user, voiceState }) => (
     </div>
     <div className="flex-1 min-w-0">
       <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text-1)' }}>{user?.username}</p>
-      {/* Show the discriminator tag */}
       <p className="text-xs truncate font-mono" style={{ color: 'var(--color-text-3)' }}>
         #{user?.discriminator || '0000'}
       </p>
@@ -188,11 +348,7 @@ const DMFriendsList = ({ onOpenDM }) => {
   }, []);
 
   if (friends.length === 0) {
-    return (
-      <p className="text-xs px-2 py-2" style={{ color: 'var(--color-text-3)' }}>
-        No friends yet
-      </p>
-    );
+    return <p className="text-xs px-2 py-2" style={{ color: 'var(--color-text-3)' }}>No friends yet</p>;
   }
 
   return (

@@ -131,4 +131,37 @@ const leaveServer = async (req, res) => {
   }
 };
 
-module.exports = { getUserServers, createServer, joinServer, getServerMembers, deleteServer, leaveServer };
+const updateServer = async (req, res) => {
+  try {
+    const { serverId } = req.params;
+    const { name } = req.body;
+
+    const member = await prisma.serverMember.findUnique({
+      where: { userId_serverId: { userId: req.user.userId, serverId } }
+    });
+
+    if (!member || !['owner', 'admin'].includes(member.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
+    const updateData = {};
+    if (name) updateData.name = name.trim();
+    if (req.file) {
+      const { uploadToCloudinary } = require('../cloudinary');
+      updateData.iconUrl = await uploadToCloudinary(req.file.buffer, 'servers');
+    }
+
+    const server = await prisma.server.update({
+      where: { id: serverId },
+      data: updateData,
+      include: { channels: true, _count: { select: { members: true } } }
+    });
+
+    res.json({ server });
+  } catch (error) {
+    console.error('Update server error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+module.exports = { getUserServers, createServer, joinServer, getServerMembers, deleteServer, leaveServer, updateServer };
