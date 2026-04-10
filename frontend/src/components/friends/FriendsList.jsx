@@ -36,12 +36,17 @@ const FriendsList = ({ onOpenDM }) => {
     };
   }, [socket]);
 
+  const [sentRequests, setSentRequests] = useState([]);
+
   const loadFriends = async () => {
     try {
       const { data } = await apiClient.get('/friends');
       setFriends(data.friends);
       setPendingRequests(data.pendingRequests);
-    } catch (error) { console.error('Failed to load friends:', error); }
+      setSentRequests(data.sentRequests); // add this
+    } catch (error) {
+      console.error('Failed to load friends:', error);
+    }
   };
 
   const handleAddFriend = async () => {
@@ -111,29 +116,60 @@ const FriendsList = ({ onOpenDM }) => {
       )}
 
       <div className="flex-1 overflow-y-auto p-4">
-        {activeTab === 'pending' ? (
-          pendingRequests.length === 0 ? (
-            <p className="text-sm text-center py-8" style={{ color: 'var(--color-text-3)' }}>No pending requests</p>
-          ) : (
-            pendingRequests.map(request => (
-              <div key={request.id} className="flex items-center gap-3 p-3 rounded-lg mb-2" style={{ background: 'var(--color-bg-3)' }}>
-                <div className="flex items-center justify-center font-bold rounded-full" style={{ width: '40px', height: '40px', background: 'var(--color-bg-5)' }}>
-                  {request.initiator?.username?.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-sm" style={{ color: 'var(--color-text-1)' }}>{request.initiator?.username}</p>
-                  <p className="text-xs" style={{ color: 'var(--color-text-3)' }}>Incoming request</p>
-                </div>
-                <button onClick={() => handleAccept(request.id, request.initiator)} className="p-2 rounded-full" style={{ background: 'rgba(34,197,94,0.2)', color: '#22c55e', border: 'none', cursor: 'pointer' }}>
-                  <Check size={14} />
-                </button>
-                <button className="p-2 rounded-full" style={{ background: 'rgba(220,38,38,0.2)', color: 'var(--color-primary)', border: 'none', cursor: 'pointer' }}>
-                  <X size={14} />
-                </button>
+        {activeTab === 'pending' && (
+          <div>
+            {pendingRequests.length > 0 && (
+              <div className="mb-4">
+                <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: 'var(--color-text-3)' }}>
+                  Incoming — {pendingRequests.length}
+                </p>
+                {pendingRequests.map(request => (
+                  <div key={request.id} className="flex items-center gap-3 p-3 rounded-lg mb-2" style={{ background: 'var(--color-bg-3)' }}>
+                    <div className="flex items-center justify-center font-bold rounded-full" style={{ width: '40px', height: '40px', background: 'var(--color-bg-5)' }}>
+                      {request.initiator?.username?.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm" style={{ color: 'var(--color-text-1)' }}>{request.initiator?.displayId}</p>
+                      <p className="text-xs" style={{ color: 'var(--color-text-3)' }}>Incoming request</p>
+                    </div>
+                    <button onClick={() => handleAccept(request.id, request.initiator)} className="p-2 rounded-full" style={{ background: 'rgba(34,197,94,0.2)', color: '#22c55e', border: 'none', cursor: 'pointer' }}>
+                      <Check size={14} />
+                    </button>
+                    <button className="p-2 rounded-full" style={{ background: 'rgba(220,38,38,0.2)', color: 'var(--color-primary)', border: 'none', cursor: 'pointer' }}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))
-          )
-        ) : (
+            )}
+
+            {sentRequests.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: 'var(--color-text-3)' }}>
+                  Sent — {sentRequests.length}
+                </p>
+                {sentRequests.map(request => (
+                  <div key={request.id} className="flex items-center gap-3 p-3 rounded-lg mb-2" style={{ background: 'var(--color-bg-3)' }}>
+                    <div className="flex items-center justify-center font-bold rounded-full" style={{ width: '40px', height: '40px', background: 'var(--color-bg-5)' }}>
+                      {request.receiver?.username?.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm" style={{ color: 'var(--color-text-1)' }}>{request.receiver?.displayId}</p>
+                      <p className="text-xs" style={{ color: 'var(--color-text-3)' }}>Pending...</p>
+                    </div>
+                    <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#f59e0b' }} />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {pendingRequests.length === 0 && sentRequests.length === 0 && (
+              <p className="text-sm text-center py-8" style={{ color: 'var(--color-text-3)' }}>No pending requests</p>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'all' && (
           friends.length === 0 ? (
             <p className="text-sm text-center py-8" style={{ color: 'var(--color-text-3)' }}>No friends yet. Add someone!</p>
           ) : (

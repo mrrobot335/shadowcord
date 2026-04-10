@@ -4,6 +4,7 @@ const prisma = new PrismaClient();
 const getFriends = async (req, res) => {
   try {
     const userId = req.user.userId;
+
     const friendships = await prisma.friendship.findMany({
       where: { status: 'accepted', OR: [{ initiatorId: userId }, { receiverId: userId }] },
       include: {
@@ -21,7 +22,15 @@ const getFriends = async (req, res) => {
       }
     });
 
-    res.json({ friends, pendingRequests });
+    // Requests the current user sent that are still pending
+    const sentRequests = await prisma.friendship.findMany({
+      where: { initiatorId: userId, status: 'pending' },
+      include: {
+        receiver: { select: { id: true, username: true, discriminator: true, displayId: true, avatarUrl: true } }
+      }
+    });
+
+    res.json({ friends, pendingRequests, sentRequests });
   } catch (error) {
     console.error('Get friends error:', error);
     res.status(500).json({ error: 'Internal server error' });
