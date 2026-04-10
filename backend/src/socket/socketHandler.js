@@ -98,7 +98,7 @@ const initializeSocket = (io) => {
           socketId: socket.id, userId: socket.userId, username: socket.username
         });
 
-        io.to(`channel:${channelId}`).emit('voice:users-update', {
+        io.emit('voice:users-update', {
           channelId, users: await getVoiceChannelUsers(channelId)
         });
       } catch (error) {
@@ -115,7 +115,7 @@ const initializeSocket = (io) => {
         await prisma.voiceChannelUser.deleteMany({ where: { userId: socket.userId, channelId } });
 
         io.to(`voice:${channelId}`).emit('voice:user-left', { socketId: socket.id, userId: socket.userId });
-        io.to(`channel:${channelId}`).emit('voice:users-update', { channelId, users: await getVoiceChannelUsers(channelId) });
+        io.emit('voice:users-update', { channelId, users: await getVoiceChannelUsers(channelId) });
       } catch (error) {
         console.error('Voice leave error:', error);
       }
