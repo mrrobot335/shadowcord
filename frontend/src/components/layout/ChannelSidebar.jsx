@@ -3,7 +3,7 @@ import { Hash, Volume2, Plus, Trash2, Mic, MicOff, PhoneOff, ChevronDown, Copy, 
 import { useAuth } from '../../context/AuthContext';
 import CreateChannelModal from '../modals/CreateChannelModal';
 
-const ChannelSidebar = ({ server, channels, selectedChannel, onSelectChannel, view, onOpenDM, voiceState, onChannelsUpdate }) => {
+const ChannelSidebar = ({ server, channels, selectedChannel, onSelectChannel, view, onOpenDM, voiceState, onChannelsUpdate, socket }) => {
   const { user } = useAuth();
   const [showCreateChannel, setShowCreateChannel] = useState(false);
   const [channelType, setChannelType] = useState('text');
@@ -56,7 +56,7 @@ const ChannelSidebar = ({ server, channels, selectedChannel, onSelectChannel, vi
               </button>
             </div>
             {voiceChannels.map(channel => (
-              <VoiceChannelItem key={channel.id} channel={channel} voiceState={voiceState} onChannelsUpdate={onChannelsUpdate} />
+              <VoiceChannelItem key={channel.id} channel={channel} voiceState={voiceState} onChannelsUpdate={onChannelsUpdate} socket={socket} />
             ))}
           </div>
         </div>
@@ -197,9 +197,9 @@ const ServerSettingsModal = ({ server, onClose }) => {
             {preview
               ? <img src={preview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               : <div className="flex flex-col items-center gap-1">
-                  <Upload size={20} style={{ color: 'var(--color-text-3)' }} />
-                  <span className="text-xs" style={{ color: 'var(--color-text-3)' }}>Icon</span>
-                </div>
+                <Upload size={20} style={{ color: 'var(--color-text-3)' }} />
+                <span className="text-xs" style={{ color: 'var(--color-text-3)' }}>Icon</span>
+              </div>
             }
             <input type="file" accept="image/*" className="hidden" onChange={handleIconChange} />
           </label>
@@ -269,9 +269,23 @@ const ChannelItem = ({ channel, selected, onClick, icon, onChannelsUpdate }) => 
   );
 };
 
-const VoiceChannelItem = ({ channel, voiceState, onChannelsUpdate }) => {
+const VoiceChannelItem = ({ channel, voiceState, onChannelsUpdate, socket }) => {
   const isInThisChannel = voiceState.isInVoice && voiceState.currentChannelId === channel.id;
-  const voiceUsers = channel.voiceChannelUsers || [];
+  const [voiceUsers, setVoiceUsers] = useState(channel.voiceChannelUsers || []);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on('voice:users-update', ({ channelId, users }) => {
+      if (channelId === channel.id) {
+        setVoiceUsers(users);
+      }
+    });
+
+    return () => {
+      socket.off('voice:users-update');
+    };
+  }, [socket, channel.id]);
 
   const handleClick = async () => {
     try {
@@ -294,12 +308,15 @@ const VoiceChannelItem = ({ channel, voiceState, onChannelsUpdate }) => {
         <span className="text-sm flex-1 truncate">{channel.name}</span>
         {isInThisChannel && <PhoneOff size={13} style={{ color: 'var(--color-primary)' }} />}
       </div>
-      {voiceUsers.map(vu => (
-        <div key={vu.user?.id || vu.id} className="flex items-center gap-2 py-0.5" style={{ paddingLeft: '32px' }}>
-          <div className="flex items-center justify-center text-xs rounded-full" style={{ width: '20px', height: '20px', background: 'var(--color-bg-5)' }}>
-            {vu.user?.username?.charAt(0).toUpperCase()}
+      {voiceUsers.map(u => (
+        <div key={u.id} className="flex items-center gap-2 py-1" style={{ paddingLeft: '24px' }}>
+          <div className="flex items-center justify-center text-xs font-bold rounded-full flex-shrink-0"
+            style={{ width: '20px', height: '20px', background: 'var(--color-primary)', color: '#fff' }}>
+            {u.avatarUrl
+              ? <img src={u.avatarUrl} alt="" style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover' }} />
+              : u.username?.charAt(0).toUpperCase()}
           </div>
-          <span className="text-xs" style={{ color: 'var(--color-text-3)' }}>{vu.user?.username}</span>
+          <span className="text-xs truncate" style={{ color: 'var(--color-text-3)' }}>{u.username}</span>
         </div>
       ))}
     </div>

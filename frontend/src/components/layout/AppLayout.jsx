@@ -64,9 +64,17 @@ const AppLayout = () => {
         onSelectFriends={() => { setView('friends'); setSelectedServer(null); }}
         onOpenSettings={() => setShowSettings(true)} onServersUpdate={setServers} />
 
-      <ChannelSidebar server={selectedServer} channels={channels} selectedChannel={selectedChannel}
-        onSelectChannel={handleSelectChannel} view={view} onOpenDM={handleOpenDM}
-        voiceState={voice} onChannelsUpdate={setChannels} />
+      <ChannelSidebar
+        server={selectedServer}
+        channels={channels}
+        selectedChannel={selectedChannel}
+        onSelectChannel={handleSelectChannel}
+        view={view}
+        onOpenDM={handleOpenDM}
+        voiceState={voice}
+        onChannelsUpdate={setChannels}
+        socket={socket}
+      />
 
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 overflow-hidden">

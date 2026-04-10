@@ -27,7 +27,17 @@ const VoiceCall = ({ socket, friend, callState, onEndCall }) => {
     socket.on('call:accepted', async ({ fromSocketId }) => {
       setCallStatus('active');
       const stream = await getStream();
-      const peer = new SimplePeer({ initiator: true, trickle: true, stream });
+      const peer = new SimplePeer({
+        initiator: true,
+        trickle: true,
+        stream,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+          ]
+        }
+      });
       peer.on('signal', (signal) => {
         if (signal.type === 'offer') socket.emit('call:offer', { targetSocketId: fromSocketId, offer: signal });
         else if (signal.type === 'answer') socket.emit('call:answer', { targetSocketId: fromSocketId, answer: signal });
@@ -44,7 +54,17 @@ const VoiceCall = ({ socket, friend, callState, onEndCall }) => {
 
     socket.on('call:offer', async ({ offer, fromSocketId }) => {
       const stream = await getStream();
-      const peer = new SimplePeer({ initiator: false, trickle: true, stream });
+      const peer = new SimplePeer({
+        initiator: false,
+        trickle: true,
+        stream,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+          ]
+        }
+      });
       peer.on('signal', (signal) => {
         if (signal.type === 'answer') socket.emit('call:answer', { targetSocketId: fromSocketId, answer: signal });
         else socket.emit('call:ice-candidate', { targetSocketId: fromSocketId, candidate: signal });

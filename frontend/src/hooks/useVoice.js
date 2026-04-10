@@ -21,7 +21,18 @@ export const useVoice = (socket) => {
   };
 
   const createPeer = (targetSocketId, initiator, stream) => {
-    const peer = new SimplePeer({ initiator, trickle: true, stream });
+    const peer = new SimplePeer({
+      initiator,
+      trickle: true,
+      stream,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+        ]
+      }
+    });
 
     peer.on('signal', (signal) => {
       if (signal.type === 'offer') socket.emit('voice:offer', { targetSocketId, offer: signal });
