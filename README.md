@@ -7,7 +7,7 @@
 ## Step 1: Database Setup
 ```bash
 psql -U postgres
-CREATE DATABASE discord_clone;
+CREATE DATABASE shadow_cord;
 \q
 ```
 
