@@ -1,6 +1,4 @@
 const cloudinary = require('cloudinary').v2;
-const multerStorageCloudinary = require('multer-storage-cloudinary');
-const CloudinaryStorage = multerStorageCloudinary.CloudinaryStorage;
 const multer = require('multer');
 
 cloudinary.config({
@@ -9,25 +7,30 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const avatarStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'shadowcord/avatars',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-    transformation: [{ width: 256, height: 256, crop: 'fill' }]
-  }
+// Use memory storage — file goes into buffer, we upload manually to Cloudinary
+const storage = multer.memoryStorage();
+
+const uploadAvatar = multer({ 
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 }
 });
 
-const serverIconStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'shadowcord/servers',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-    transformation: [{ width: 256, height: 256, crop: 'fill' }]
-  }
+const uploadServerIcon = multer({ 
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-const uploadAvatar = multer({ storage: avatarStorage });
-const uploadServerIcon = multer({ storage: serverIconStorage });
+// Helper function to upload a buffer to Cloudinary
+const uploadToCloudinary = (buffer, folder) => {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_stream(
+      { folder: `shadowcord/${folder}`, transformation: [{ width: 256, height: 256, crop: 'fill' }] },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result.secure_url);
+      }
+    ).end(buffer);
+  });
+};
 
-module.exports = { uploadAvatar, uploadServerIcon };
+module.exports = { uploadAvatar, uploadServerIcon, uploadToCloudinary };

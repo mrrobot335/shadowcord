@@ -34,7 +34,10 @@ const createServer = async (req, res) => {
         data: {
           name: name.trim(),
           ownerId: req.user.userId,
-          iconUrl: req.file ? req.file.path : null
+          iconUrl: req.file ? await (async () => {
+            const { uploadToCloudinary } = require('../cloudinary');
+            return await uploadToCloudinary(req.file.buffer, 'servers');
+          })() : null
         }
       });
       await tx.serverMember.create({
