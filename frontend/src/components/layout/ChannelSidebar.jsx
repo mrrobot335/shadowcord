@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Hash, Volume2, Plus, Trash2, Mic, MicOff, PhoneOff, ChevronDown } from 'lucide-react';
+import { Hash, Volume2, Plus, Trash2, Mic, MicOff, PhoneOff, ChevronDown, Copy } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import CreateChannelModal from '../modals/CreateChannelModal';
 
@@ -32,7 +32,16 @@ const ChannelSidebar = ({ server, channels, selectedChannel, onSelectChannel, vi
       <div className="flex flex-col" style={{ width: '240px', background: 'var(--color-bg-3)', borderRight: '1px solid var(--color-border)' }}>
         <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--color-border)' }}>
           <h2 className="font-semibold text-sm truncate" style={{ color: 'var(--color-text-1)' }}>{server.name}</h2>
-          <ChevronDown size={16} style={{ color: 'var(--color-text-3)' }} />
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(server.id);
+              alert('Server ID copied! Share it with friends so they can join.');
+            }}
+            title="Copy Server ID to invite friends"
+            style={{ color: 'var(--color-text-3)', background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            <Copy size={16} />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-2">
