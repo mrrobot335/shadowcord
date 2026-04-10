@@ -16,7 +16,7 @@ export const SocketProvider = ({ children }) => {
       return;
     }
 
-    const newSocket = io('https://textiles-discounted-restore-movements.trycloudflare.com', {
+    const newSocket = io('https://shadowcord-production.up.railway.app', {
       auth: { token },
       transports: ['websocket', 'polling']
     });
