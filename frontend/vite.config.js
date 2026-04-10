@@ -6,6 +6,11 @@ export default defineConfig({
     global: 'globalThis',
   },
   plugins: [react()],
+  preview: {
+    host: '0.0.0.0',
+    port: 4173,
+    allowedHosts: ['handsome-love-production-6435.up.railway.app']
+  },
   build: {
     outDir: 'dist'
   }
