@@ -19,7 +19,9 @@ const ChannelSidebar = ({ server, channels, selectedChannel, onSelectChannel, vi
         <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
           <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-1)' }}>Direct Messages</h2>
         </div>
-        <div className="flex-1 overflow-y-auto p-2" />
+        <div className="flex-1 overflow-y-auto p-2">
+          <DMFriendsList onOpenDM={onOpenDM} />
+        </div>
         <UserPanel user={user} voiceState={voiceState} />
       </div>
     );
@@ -168,5 +170,62 @@ const UserPanel = ({ user, voiceState }) => (
     )}
   </div>
 );
+
+const DMFriendsList = ({ onOpenDM }) => {
+  const [friends, setFriends] = useState([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const { default: apiClient } = await import('../../api/client');
+        const { data } = await apiClient.get('/friends');
+        setFriends(data.friends);
+      } catch (err) {
+        console.error('Failed to load friends for DM sidebar:', err);
+      }
+    };
+    load();
+  }, []);
+
+  if (friends.length === 0) {
+    return (
+      <p className="text-xs px-2 py-2" style={{ color: 'var(--color-text-3)' }}>
+        No friends yet
+      </p>
+    );
+  }
+
+  return (
+    <>
+      {friends.map(friend => (
+        <button key={friend.id} onClick={() => onOpenDM(friend)}
+          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md"
+          style={{ background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-bg-4)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+          <div className="relative flex-shrink-0">
+            <div className="flex items-center justify-center text-xs font-bold rounded-full"
+              style={{ width: '32px', height: '32px', background: 'var(--color-primary)', color: '#fff' }}>
+              {friend.avatarUrl
+                ? <img src={friend.avatarUrl} alt="" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                : friend.username?.charAt(0).toUpperCase()}
+            </div>
+            <div className="absolute rounded-full border-2" style={{
+              width: '10px', height: '10px', bottom: '-1px', right: '-1px',
+              background: friend.status === 'online' ? '#22c55e' : '#6b7280',
+              borderColor: 'var(--color-bg-3)'
+            }} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm truncate" style={{ color: 'var(--color-text-1)' }}>{friend.username}</p>
+            <p className="text-xs truncate" style={{ color: friend.status === 'online' ? '#22c55e' : 'var(--color-text-3)' }}>
+              {friend.status === 'online' ? 'Online' : 'Offline'}
+            </p>
+          </div>
+        </button>
+      ))}
+    </>
+  );
+};
 
 export default ChannelSidebar;
