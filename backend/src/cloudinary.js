@@ -1,5 +1,6 @@
 const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const multerStorageCloudinary = require('multer-storage-cloudinary');
+const CloudinaryStorage = multerStorageCloudinary.CloudinaryStorage;
 const multer = require('multer');
 
 cloudinary.config({
@@ -8,9 +9,8 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Storage for avatars
 const avatarStorage = new CloudinaryStorage({
-  cloudinary,
+  cloudinary: cloudinary,
   params: {
     folder: 'shadowcord/avatars',
     allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
@@ -18,9 +18,8 @@ const avatarStorage = new CloudinaryStorage({
   }
 });
 
-// Storage for server icons
 const serverIconStorage = new CloudinaryStorage({
-  cloudinary,
+  cloudinary: cloudinary,
   params: {
     folder: 'shadowcord/servers',
     allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
