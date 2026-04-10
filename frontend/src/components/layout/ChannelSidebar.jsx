@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Hash, Volume2, Plus, Trash2, Mic, MicOff, PhoneOff, ChevronDown, Copy } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import CreateChannelModal from '../modals/CreateChannelModal';
